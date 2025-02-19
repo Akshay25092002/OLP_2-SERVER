@@ -4,7 +4,7 @@ import User from "../models/User.js";
 import { rm } from "fs/promises";
 import { promisify } from "util";
 import fs from "fs";
-import Progress from "../models/progress.js";
+import Progress from "../models/Progress.js";
 
 export const getAllCourses = async (req, res) => {
     try {
