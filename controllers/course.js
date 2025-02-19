@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import { rm } from "fs/promises";
 import { promisify } from "util";
 import fs from "fs";
+import Progress from "../models/progress.js";
 
 export const getAllCourses = async (req, res) => {
     try {
@@ -153,7 +154,7 @@ export const deleteCourse = async (req, res) => {
 
 export const getMyCourses = async (req, res) => {
     try {
-        const courses = await Courses.find();
+        const courses = await Courses.find(req.params.id);
 
         res.json({ courses, })
 
@@ -162,3 +163,71 @@ export const getMyCourses = async (req, res) => {
         res.status(500).send("Internal Server error occured.")
     }
 }
+
+
+
+export const addProgress = async (req, res) => {
+    try {
+        const progress = await Progress.findOne({
+            user: req.user._id,
+            course: req.query.course,
+        });
+
+        const { lecturesId } = req.query;
+
+        if (progress.completedLectures.includes(lecturesId)) {
+            return res.json({
+                message: "Progress recorded",
+            });
+        }
+
+        progress.completedLectures.push(lecturesId);
+
+        await progress.save();
+
+        res.status(201).json({
+            message: "new Progress added",
+        });
+
+
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send("Internal Server error occured.")
+    }
+}
+
+
+
+export const getYourProgress = async (req, res) => {
+    try {
+        let progress = await Progress.findOne({
+            user: req.user._id,
+            course: req.query.course,
+        });
+
+        const allLectures = (await Lecture.find({ course: req.query.course })).length;
+
+        // If progress does not exist, create a new entry
+        if (!progress) {
+            progress = await Progress.create({
+                course: req.query.course,
+                completedLectures: [],
+                user: req.user._id,
+            });
+        }
+
+        const completedLectures = progress.completedLectures.length;
+        const courseProgressPercentage = allLectures === 0 ? 0 : (completedLectures * 100) / allLectures;
+
+        res.json({
+            courseProgressPercentage,
+            completedLectures,
+            allLectures,
+            progress,
+        });
+
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send("Internal Server error occurred.");
+    }
+};
