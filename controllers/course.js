@@ -8,7 +8,6 @@ import Progress from "../models/Progress.js";
 import { instance } from "../index.js";
 import crypto from "crypto";
 import { Payment } from "../models/Payment.js";
-import Progress from "../models/Progress.js";
 
 export const getAllCourses = async (req, res) => {
     try {
