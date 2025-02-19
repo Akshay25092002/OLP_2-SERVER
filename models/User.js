@@ -20,6 +20,13 @@ const UserSchema = new Schema({
         type: String,
         default: "user",
     },
+    subscription: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            default: [],
+            ref: "Courses",
+        },
+    ],
 
 }, {
     timestamps: true,

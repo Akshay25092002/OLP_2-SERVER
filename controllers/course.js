@@ -4,7 +4,10 @@ import User from "../models/User.js";
 import { rm } from "fs/promises";
 import { promisify } from "util";
 import fs from "fs";
-import Progress from "../models/progress.js";
+import Progress from "../models/Progress.js";
+import { instance } from "../index.js";
+import crypto from "crypto";
+import { Payment } from "../models/Payment.js";
 
 export const getAllCourses = async (req, res) => {
     try {
@@ -154,7 +157,7 @@ export const deleteCourse = async (req, res) => {
 
 export const getMyCourses = async (req, res) => {
     try {
-        const courses = await Courses.find(req.params.id);
+        const courses = await Courses.find({ _id: req.user.subscription });
 
         res.json({ courses, })
 
@@ -162,8 +165,73 @@ export const getMyCourses = async (req, res) => {
         console.error(error.message);
         res.status(500).send("Internal Server error occured.")
     }
-}
+};
 
+export const checkout = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        const course = await Courses.findById(req.params.id);
+
+        if (user.subscription.includes(course._id)) {
+            return res.status(400).json({
+                message: "You already have this course",
+            });
+        }
+
+        const options = {
+            amount: Number(course.price * 100),
+            currency: "INR",
+        };
+
+        const order = await instance.orders.create(options);
+
+        res.status(201).json({
+            order,
+            course,
+        });
+
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send("Internal Server error occured.")
+    }
+};
+
+export const paymentVerification = async (req, res) => {
+    try {
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+        const body = razorpay_order_id + "|" + razorpay_payment_id;
+
+        const expectedSignature = crypto.createHmac("sha256", process.env.Razorpay_Secret).update(body).digest("hex");
+
+        const isAuthentic = expectedSignature === razorpay_signature;
+
+        if (isAuthentic) {
+            await Payment.create({
+                razorpay_order_id, razorpay_payment_id, razorpay_signature,
+            });
+
+            const user = await User.findById(req.user._id)
+
+            const course = await Courses.findById(req.params.id)
+
+            user.subscription.push(course._id)
+            await user.save()
+
+            return res.status(200).json({
+                message: "Course Purchased Successfully",
+            })
+        } else {
+            return res.status(400).json({
+                message: "Payment failed"
+            })
+        }
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send("Internal Server error occured.")
+    }
+};
 
 
 export const addProgress = async (req, res) => {

@@ -4,7 +4,7 @@ import User from '../models/User.js';
 
 export const createCourse = async (req, res) => {
     try {
-        const { title, description, duration, category, createdBy } = req.body;
+        const { title, description, duration, category, createdBy, price } = req.body;
 
         const image = req.file;
 
@@ -12,6 +12,7 @@ export const createCourse = async (req, res) => {
             title,
             description,
             image: image?.path,
+            price,
             duration,
             category,
             createdBy,
