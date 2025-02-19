@@ -2,7 +2,7 @@ import Courses from '../models/Courses.js';
 
 export const createCourse = async (req, res) => {
     try {
-        const { title, description, duration, category, createdBy } = req.body;
+        const { title, description, duration, category, createdBy, price } = req.body;
 
         const image = req.file;
 
@@ -11,6 +11,7 @@ export const createCourse = async (req, res) => {
             description,
             image: image?.path,
             duration,
+            price,
             category,
             createdBy,
         });
